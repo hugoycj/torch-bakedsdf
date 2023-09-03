@@ -73,6 +73,9 @@ class VolumeColorPlusSpecular(nn.Module):
         self.sepcular_network = sepcular_network
         self.shading = 'diffuse'
 
+    def set_shading_mode(self, mode):
+        self.shading = mode
+        
     def forward(self, features, dirs, *args):
         """
         Args:
