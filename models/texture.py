@@ -55,3 +55,60 @@ class VolumeColor(nn.Module):
 
     def regularizations(self, out):
         return {}
+
+@models.register('volume-color-plus-specular')
+class VolumeColorPlusSpecular(nn.Module):
+    def __init__(self, config):
+        super(VolumeColorPlusSpecular, self).__init__()
+        self.config = config
+        self.n_output_dims = 3
+        self.n_input_dims = self.config.input_feature_dim
+        diffuse_network = get_mlp(self.n_input_dims, self.n_output_dims, self.config.mlp_network_config)    
+        self.diffuse_network = diffuse_network
+        
+        # self.sg_blob_num = self.config.get('sg_blob_num')
+        # sepcular_network = get_mlp(self.n_input_dims, , self.config.mlp_network_config)
+        # self.sepcular_network = sepcular_network
+
+    def forward(self, features, dirs, *args):
+        """
+        Args:
+            features (torch.Tensor): The input features, in a shape of [N, self.n_input_dims]
+            dirs (torch.Tensor): The direction vector, in a shape of [N, 3]
+            *args: Other arguments
+
+        Returns:
+            torch.Tensor: The output color, in a shape of [N, C]
+        """
+
+        network_inp = torch.cat([features.view(-1, features.shape[-1]), dirs_embd] + [arg.view(-1, arg.shape[-1]) for arg in args], dim=-1)
+        color = self.diffuse_network(network_inp).view(*features.shape[:-1], self.n_output_dims).float()
+        if 'color_activation' in self.config:
+            color = get_activation(self.config.color_activation)(color)
+        return color
+
+    def spherical_gaussian(self, viewdirs: torch.Tensor, lgtSGs: torch.Tensor) -> torch.Tensor:
+        """
+        Calculate the specular component of a Spherical Gaussian (SG) model.
+
+        Args:
+            direction (torch.Tensor): The direction vector, in a shape of [N, 3]
+            lgtSGs (torch.Tensor): The parameter of the SGs, in a shape of [N, sg_blob_num, 7]
+
+        Returns:
+            torch.Tensor: The specular component, in a shape of [N, 3]
+        """
+        
+        viewdirs = viewdirs.unsqueeze(-2)  # [..., 1, 3]
+        
+        lgtSGLobes = lgtSGs[..., :3] / (torch.norm(lgtSGs[..., :3], dim=-1, keepdim=True)) # (-1, 1), [N, sg_blob_num, 3]
+        lgtSGLambdas = torch.abs(lgtSGs[..., 3:4]) #  positive values, [N, sg_blob_num, 3]
+        lgtSGMus = torch.sigmoid(lgtSGs[..., -3:])  # (0, 1), [N, sg_blob_num, 3]
+        
+        specular = lgtSGMus * torch.exp(lgtSGLambdas * (torch.sum(viewdirs * lgtSGLobes, dim=-1, keepdim=True) - 1.))
+        specular = torch.sum(specular, dim=-2)  # [..., 3]
+        
+        return specular
+    
+    def regularizations(self, out):
+        return {}
