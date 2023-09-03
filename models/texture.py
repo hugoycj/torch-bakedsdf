@@ -61,14 +61,17 @@ class VolumeColorPlusSpecular(nn.Module):
     def __init__(self, config):
         super(VolumeColorPlusSpecular, self).__init__()
         self.config = config
-        self.n_output_dims = 3
+        self.specular_dim = self.config.get('specular_dim')
+        self.n_output_dims = 3 + self.specular_dim
         self.n_input_dims = self.config.input_feature_dim
         diffuse_network = get_mlp(self.n_input_dims, self.n_output_dims, self.config.mlp_network_config)    
         self.diffuse_network = diffuse_network
+        self.diffuse_step = self.config.get('diffuse_step')
         
-        # self.sg_blob_num = self.config.get('sg_blob_num')
-        # sepcular_network = get_mlp(self.n_input_dims, , self.config.mlp_network_config)
-        # self.sepcular_network = sepcular_network
+        self.sg_blob_num = self.config.get('sg_blob_num')
+        sepcular_network = get_mlp(self.specular_dim, 9*self.sg_blob_num, self.config.mlp_network_config)
+        self.sepcular_network = sepcular_network
+        self.shading = 'diffuse'
 
     def forward(self, features, dirs, *args):
         """
@@ -80,13 +83,21 @@ class VolumeColorPlusSpecular(nn.Module):
         Returns:
             torch.Tensor: The output color, in a shape of [N, C]
         """
-
-        network_inp = torch.cat([features.view(-1, features.shape[-1]), dirs_embd] + [arg.view(-1, arg.shape[-1]) for arg in args], dim=-1)
-        color = self.diffuse_network(network_inp).view(*features.shape[:-1], self.n_output_dims).float()
+        network_inp = features.view(-1, features.shape[-1])
+        color_feature = self.diffuse_network(network_inp).view(*features.shape[:-1], self.n_output_dims).float()
+        diffuse = color_feature[..., :3]
         if 'color_activation' in self.config:
-            color = get_activation(self.config.color_activation)(color)
-        return color
-
+            diffuse = get_activation(self.config.color_activation)(diffuse)
+        
+        if self.shading == 'diffuse':
+            specular = None
+            color = diffuse
+        else:
+            specular_feature = self.sepcular_network(color_feature[..., 3:]).reshape((-1, self.sg_blob_num, 9))
+            specular = self.spherical_gaussian(dirs, specular_feature)
+            color = specular + diffuse # specular + albedo
+        return diffuse
+    
     def spherical_gaussian(self, viewdirs: torch.Tensor, lgtSGs: torch.Tensor) -> torch.Tensor:
         """
         Calculate the specular component of a Spherical Gaussian (SG) model.
@@ -109,6 +120,9 @@ class VolumeColorPlusSpecular(nn.Module):
         specular = torch.sum(specular, dim=-2)  # [..., 3]
         
         return specular
+    
+    def update_step(self, epoch, global_step):
+        self.shading = 'diffuse' if global_step > self.diffuse_step else 'full'
     
     def regularizations(self, out):
         return {}
