@@ -3,7 +3,7 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import trimesh
 import models
 from models.neus import NeuSModel, VarianceNetwork
 from models.utils import chunk_batch
@@ -138,3 +138,14 @@ class BakedSDFModel(NeuSModel):
             rgb = self.texture(feature, -normal, normal) # set the viewing directions to the normal to get "albedo"
             mesh['v_rgb'] = rgb.cpu()
         return mesh
+
+    @torch.no_grad()
+    def export_glb(self, chunk_size=2097152):
+        mesh = self.isosurface()
+        positions = mesh['v_pos'].to(self.rank)
+        _, _, feature = chunk_batch(self.geometry, chunk_size, False, positions, with_grad=True, with_feature=True)
+        vertex_colors, attribute_dict = self.texture.get_spherical_gaussian_params(feature, positions)
+        tri_mesh = trimesh.Trimesh(vertices=mesh['v_pos'].cpu().numpy(), faces=mesh['t_pos_idx'].cpu().numpy(), \
+                                    vertex_colors=vertex_colors)            
+        tri_mesh.vertex_attributes.update(attribute_dict)
+        return tri_mesh

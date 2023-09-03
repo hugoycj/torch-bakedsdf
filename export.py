@@ -29,7 +29,7 @@ def main():
     parser.add_argument('--exp_dir', required=True)
     parser.add_argument('--output-dir', required=True)
     
-    parser.add_argument('--decimate', type=float, help='Specifies the desired final size of the mesh. \
+    parser.add_argument('--decimate', default=-1, type=float, help='Specifies the desired final size of the mesh. \
                         If the number is less than 1, it represents the final size as a percentage of the initial size. \
                         If the number is greater than 1, it represents the desired number of faces.')
     args, extras = parser.parse_known_args()
@@ -63,11 +63,7 @@ def main():
     logging.info(f"Creating system: {config.system.name}")
     system = systems.make(config.system.name, config, load_from_checkpoint=latest_ckpt)
     system.model.cuda()
-    mesh = system.model.isosurface()
-    mesh = trimesh.Trimesh(
-        vertices=mesh['v_pos'].numpy(),
-        faces=mesh['t_pos_idx'].numpy()
-    )
+    mesh = system.model.export_glb()
     
     if args.decimate > 0:
         logging.info("Decimating mesh.")
@@ -75,7 +71,7 @@ def main():
     
     os.makedirs(args.output_dir, exist_ok=True)
     logging.info("Exporting mesh.")
-    mesh.export(os.path.join(args.output_dir, 'iso_mesh.ply'))
+    mesh.export(os.path.join(args.output_dir, 'iso_mesh.glb'))
     logging.info("Export finished successfully.")
     
 if __name__ == '__main__':

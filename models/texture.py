@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+import numpy as np
 import models
 from models.utils import get_activation
 from models.network_utils import get_encoding, get_mlp, get_encoding_with_network
@@ -101,6 +101,31 @@ class VolumeColorPlusSpecular(nn.Module):
             specular = self.spherical_gaussian(dirs, specular_feature)
             color = specular + diffuse # specular + albedo
         return color
+    
+    def get_spherical_gaussian_params(self, features, positions):
+        _features = features.view(-1, features.shape[-1])
+        diffuse = self.diffuse_network(_features).view(*features.shape[:-1], self.n_output_dims).float()
+        if 'color_activation' in self.config:
+            diffuse = get_activation(self.config.color_activation)(diffuse)
+            
+        _positions = positions.view(-1, positions.shape[-1])
+        lgtSGs = self.sepcular_network(positions).reshape((-1, self.sg_blob_num, 9))
+        lgtSGLobes = lgtSGs[..., :3] / (torch.norm(lgtSGs[..., :3], dim=-1, keepdim=True)) # mean, (-1, 1), [N, sg_blob_num, 3]
+        lgtSGMus = torch.sigmoid(lgtSGs[..., -3:])  # positive values, color, [N, sg_blob_num, 3]
+        lgtSGLambdas = torch.abs(lgtSGs[..., 3:4]) #  positive values, scale, [N, sg_blob_num, 3]
+
+        attribute_dict = {}
+        for i in range(self.sg_blob_num):
+            sg_means = (lgtSGLobes[:, i].cpu().numpy() + 1) / 2 * 255
+            attribute_dict[f'_sg_mean_{i}'] = sg_means.astype(np.int16)
+            sg_colors = lgtSGMus[:, i].cpu().numpy() * 255
+            attribute_dict[f'_sg_color_{i}'] = sg_colors.astype(np.int16)
+            attribute_dict[f'_sg_scale_{i}'] = lgtSGLambdas[:, i].cpu().numpy() * 255 / 100
+        vertex_colors = diffuse.cpu().numpy()
+        vertex_colors *= 255
+        vertex_colors = vertex_colors.astype(np.int16)
+        
+        return vertex_colors, attribute_dict
     
     def spherical_gaussian(self, viewdirs: torch.Tensor, lgtSGs: torch.Tensor) -> torch.Tensor:
         """
