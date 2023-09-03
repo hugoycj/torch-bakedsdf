@@ -121,6 +121,10 @@ class VolumeColorPlusSpecular(nn.Module):
         lgtSGLambdas = torch.abs(lgtSGs[..., 3:4]) #  sgg, (0, 100), [N, sg_blob_num, 3]
 
         attribute_dict = {}
+        cv2gl = torch.tensor([[1.0, 0.0, 0.0],
+                                [0.0, 0.0, -1.0],
+                                [0.0, -1.0, 0.0]]).to(lgtSGLobes.device)
+        lgtSGLobes = torch.matmul(lgtSGLobes, cv2gl)
         for i in range(self.sg_blob_num):
             _lgtSGLobes = (lgtSGLobes[:, i] + 1) / 2
             _lgtSGMus = lgtSGMus[:, i]
