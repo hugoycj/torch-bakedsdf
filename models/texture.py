@@ -56,6 +56,12 @@ class VolumeColor(nn.Module):
     def regularizations(self, out):
         return {}
 
+def quantize_and_clip(values):
+    values = values * 255
+    # values = torch.round(values)
+    # values = torch.clamp(values, 0, 255)
+    return values
+
 @models.register('volume-color-plus-specular')
 class VolumeColorPlusSpecular(nn.Module):
     def __init__(self, config):
@@ -107,27 +113,26 @@ class VolumeColorPlusSpecular(nn.Module):
         diffuse = self.diffuse_network(_features).view(*features.shape[:-1], self.n_output_dims).float()
         if 'color_activation' in self.config:
             diffuse = get_activation(self.config.color_activation)(diffuse)
-            
+
         _positions = positions.view(-1, positions.shape[-1])
         lgtSGs = self.sepcular_network(positions).reshape((-1, self.sg_blob_num, 9))
         lgtSGLobes = lgtSGs[..., :3] / (torch.norm(lgtSGs[..., :3], dim=-1, keepdim=True)) # mean, (-1, 1), [N, sg_blob_num, 3]
-        lgtSGMus = torch.sigmoid(lgtSGs[..., -3:])  # positive values, color, [N, sg_blob_num, 3]
-        lgtSGLambdas = torch.abs(lgtSGs[..., 3:4]) #  positive values, scale, [N, sg_blob_num, 3]
+        lgtSGMus = torch.sigmoid(lgtSGs[..., -3:])  # color, (0, 1) [N, sg_blob_num, 3]
+        lgtSGLambdas = torch.abs(lgtSGs[..., 3:4]) #  sgg, (0, 100), [N, sg_blob_num, 3]
 
         attribute_dict = {}
         for i in range(self.sg_blob_num):
-            sg_means = (lgtSGLobes[:, i].cpu().numpy() + 1) / 2 * 255
-            attribute_dict[f'_sg_mean_{i}'] = sg_means.astype(np.int16)
-            sg_colors = lgtSGMus[:, i].cpu().numpy() * 255
-            attribute_dict[f'_sg_color_{i}'] = sg_colors.astype(np.int16)
-            attribute_dict[f'_sg_scale_{i}'] = lgtSGLambdas[:, i].cpu().numpy() * 255 / 100
+            _lgtSGLobes = (lgtSGLobes[:, i] + 1) / 2
+            _lgtSGMus = lgtSGMus[:, i]
+            _lgtSGLambdas = lgtSGLambdas[:, i] / 100
+            attribute_dict[f'_sg_mean_{i}'] = quantize_and_clip(_lgtSGLobes).cpu().numpy()
+            attribute_dict[f'_sg_color_{i}'] = quantize_and_clip(_lgtSGMus).cpu().numpy()
+            attribute_dict[f'_sg_scale_{i}'] = quantize_and_clip(_lgtSGLambdas).cpu().numpy()
         vertex_colors = diffuse.cpu().numpy()
-        vertex_colors *= 255
-        vertex_colors = vertex_colors.astype(np.int16)
         
         return vertex_colors, attribute_dict
     
-    def spherical_gaussian(self, viewdirs: torch.Tensor, lgtSGs: torch.Tensor) -> torch.Tensor:
+    def spherical_gaussian(self, viewdirs: torch.Tensor, lgtSGs: torch.Tensor, quantitize=True) -> torch.Tensor:
         """
         Calculate the specular component of a Spherical Gaussian (SG) model.
 
@@ -142,9 +147,15 @@ class VolumeColorPlusSpecular(nn.Module):
         viewdirs = viewdirs.unsqueeze(-2)  # [..., 1, 3]
         
         lgtSGLobes = lgtSGs[..., :3] / (torch.norm(lgtSGs[..., :3], dim=-1, keepdim=True)) # (-1, 1), [N, sg_blob_num, 3]
-        lgtSGLambdas = torch.abs(lgtSGs[..., 3:4]) #  positive values, [N, sg_blob_num, 3]
         lgtSGMus = torch.sigmoid(lgtSGs[..., -3:])  # (0, 1), [N, sg_blob_num, 3]
+        lgtSGLambdas = torch.abs(lgtSGs[..., 3:4]) #  positive values, [N, sg_blob_num, 3]
         
+        #TODO: Fix the quantization error
+        if quantitize:
+            lgtSGLobes = quantize_and_clip((lgtSGLobes + 1) / 2) * (2.0 / 255)  - 1
+            lgtSGMus = quantize_and_clip(lgtSGMus) / 255
+            lgtSGLambdas = 100 * quantize_and_clip(lgtSGLambdas / 100) / 255 
+
         specular = lgtSGMus * torch.exp(lgtSGLambdas * (torch.sum(viewdirs * lgtSGLobes, dim=-1, keepdim=True) - 1.))
         specular = torch.sum(specular, dim=-2)  # [..., 3]
         
