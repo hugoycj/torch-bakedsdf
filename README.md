@@ -53,6 +53,15 @@ The code snapshots, checkpoints and experiment outputs are saved to `exp/[name]/
 ```bash
 python launch.py --config configs/nerf-blender.yaml --gpu 0 --train dataset.scene=lego tag=iter50k seed=0 trainer.max_steps=50000
 ```
+
+### Baking on NeRF-Synthetic
+```
+python launch.py --config configs/neus-blender.yaml --gpu 0 --train dataset.scene=lego
+python launch.py --config configs/bakedsdf-blender.yaml --train dataset.scene=lego \
+                --resume ./exp/[name]/[tag]@[timestamp]/ckpt/epoch=0-step=[max_steps].ckpt \
+                --resume_weights_only
+```
+
 ### Training on DTU
 Download preprocessed DTU data provided by [NeuS](https://drive.google.com/drive/folders/1Nlzejs4mfPuJYORLbDEUDWlc9IZIbU0C?usp=sharing) or [IDR](https://www.dropbox.com/sh/5tam07ai8ch90pf/AADniBT3dmAexvm_J1oL__uoa). In the provided config files we assume using NeuS DTU data. If you are using IDR DTU data, please set `dataset.cameras_file=cameras.npz`. You may also need to adjust `dataset.root_dir` to point to your downloaded data location.
 ```bash

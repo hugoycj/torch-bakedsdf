@@ -95,7 +95,7 @@ def main():
         strategy = 'dp'
         assert n_gpus == 1
     else:
-        strategy = 'ddp_find_unused_parameters_false'
+        strategy = 'ddp'
     
     trainer = Trainer(
         devices=n_gpus,
