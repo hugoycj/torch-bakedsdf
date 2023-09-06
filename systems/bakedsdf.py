@@ -225,7 +225,9 @@ class BakedSDFSystem(BaseSystem):
     def export(self):
         if self.config.export.export_glb:
             mesh = self.model.export_glb(self.config.export.chunk_size)
-            mesh.export(f"it{self.global_step}-{self.config.model.geometry.isosurface.method}{self.config.model.geometry.isosurface.resolution}.glb")
+            mesh.export(self.get_save_path(
+                f"it{self.global_step}-{self.config.model.geometry.isosurface.method}{self.config.model.geometry.isosurface.resolution}.glb")
+                        )
         else:
             mesh = self.model.export(self.config.export)
             self.save_mesh(
