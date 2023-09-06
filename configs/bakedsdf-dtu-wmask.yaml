@@ -1,4 +1,4 @@
-name: bakedsdf-dtu-${basename:${dataset.root_dir}}
+name: neus-dtu-wmask-${basename:${dataset.root_dir}}
 tag: ""
 seed: 42
 
@@ -8,7 +8,7 @@ dataset:
   cameras_file: cameras_sphere.npz
   img_downscale: 2 # specify training image size by either img_wh or img_downscale
   n_test_traj_steps: 60
-  apply_mask: false
+  apply_mask: true
 
 model:
   name: bakedsdf
@@ -23,8 +23,8 @@ model:
   randomized: true
   ray_chunk: 2048
   cos_anneal_end: 20000
-  learned_background: true
-  background_color: random
+  learned_background: false
+  background_color: white
   variance:
     init_val: 0.3
     modulate: false
@@ -64,45 +64,18 @@ model:
       output_activation: none
       n_neurons: 64
       n_hidden_layers: 2
-    diffuse_step: 5000
+    diffuse_step: 1000
     sg_blob_num: 3
     specular_dim: 3
-    sg_network_config:
-      otype: VanillaMLP
-      activation: ReLU
-      output_activation: none
-      n_neurons: 64
-      n_hidden_layers: 2
-    color_activation: sigmoid
-  # background model configurations
-  num_samples_per_ray_bg: 64
-  geometry_bg:
-    name: volume-density
-    radius: ${model.radius}
-    feature_dim: 8
-    density_activation: trunc_exp
-    density_bias: -1
-    isosurface: null
-    xyz_encoding_config:
+    sg_encoding_config:
       otype: HashGrid
       n_levels: 16
       n_features_per_level: 2
       log2_hashmap_size: 19
       base_resolution: 32
       per_level_scale: 1.3195079107728942
-    mlp_network_config:
-      otype: VanillaMLP
-      activation: ReLU
-      output_activation: none
-      n_neurons: 64
-      n_hidden_layers: 1
-  texture_bg:
-    name: volume-radiance
-    input_feature_dim: ${model.geometry_bg.feature_dim}
-    dir_encoding_config:
-      otype: SphericalHarmonics
-      degree: 4
-    mlp_network_config:
+      include_xyz: true
+    sg_network_config:
       otype: VanillaMLP
       activation: ReLU
       output_activation: none
@@ -111,18 +84,10 @@ model:
     color_activation: sigmoid
 
 system:
-  name: neus-system
+  name: bakedsdf-system
   loss:
     lambda_rgb_mse: 0.
     lambda_rgb_l1: 1.
-    lambda_mask: 0.0
-    lambda_eikonal: 0.1
-    lambda_curvature: 0.
-    lambda_sparsity: 0.0
-    lambda_distortion: 0.0
-    lambda_distortion_bg: 0.0
-    lambda_opaque: 0.0
-    sparsity_scale: 1.
   optimizer:
     name: AdamW
     args:
@@ -130,16 +95,8 @@ system:
       betas: [0.9, 0.99]
       eps: 1.e-15
     params:
-      geometry:
-        lr: 0.01
       texture:
         lr: 0.01
-      geometry_bg:
-        lr: 0.01
-      texture_bg:
-        lr: 0.01
-      variance:
-        lr: 0.001
   constant_steps: 5000
   scheduler:
     name: SequentialLR
@@ -161,10 +118,10 @@ checkpoint:
 
 export:
   chunk_size: 2097152
-  export_vertex_color: True
+  export_glb: True
 
 trainer:
-  max_steps: 20000
+  max_steps: 10000
   log_every_n_steps: 100
   num_sanity_val_steps: 0
   val_check_interval: 5000

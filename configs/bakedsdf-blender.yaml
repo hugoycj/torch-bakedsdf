@@ -1,4 +1,4 @@
-name: bakedsdf-blender-${dataset.scene}
+name: neus-blender-${dataset.scene}
 tag: ""
 seed: 42
 
@@ -124,7 +124,7 @@ checkpoint:
 
 export:
   chunk_size: 2097152
-  export_vertex_color: True
+  export_glb: True
 
 trainer:
   max_steps: 10000
