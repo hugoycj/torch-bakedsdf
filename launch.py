@@ -63,6 +63,11 @@ def main():
         config.seed = int(time.time() * 1000) % 1000
     pl.seed_everything(config.seed)
 
+    if args.resume == 'latest':
+        latest_trail_name = sorted(os.listdir(config.exp_dir))[-1]
+        latest_ckpt_dir = os.path.join(config.exp_dir, latest_trail_name, 'ckpt')
+        latest_ckpt_path = os.path.join(latest_ckpt_dir, sorted(os.listdir(latest_ckpt_dir))[-1])
+        args.resume = latest_ckpt_path
     dm = datasets.make(config.dataset.name, config.dataset)
     system = systems.make(config.system.name, config, load_from_checkpoint=None if not args.resume_weights_only else args.resume)
 

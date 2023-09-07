@@ -27,7 +27,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', default='0', help='GPU(s) to be used')
     parser.add_argument('--exp_dir', required=True)
-    parser.add_argument('--output-dir', required=True)
+    parser.add_argument('--output-dir', default='results')
     
     parser.add_argument('--decimate', default=-1, type=float, help='Specifies the desired final size of the mesh. \
                         If the number is less than 1, it represents the final size as a percentage of the initial size. \
@@ -39,15 +39,11 @@ def main():
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
     n_gpus = len(args.gpu.split(','))
 
-    code_dir = os.path.join(args.exp_dir, 'code')
     ckpt_dir = os.path.join(args.exp_dir, 'ckpt')
     latest_ckpt = sorted(os.listdir(ckpt_dir), key=lambda s: int(s.split('-')[0].split('=')[1]), reverse=True)[0]
     latest_ckpt = os.path.join(ckpt_dir, latest_ckpt)
     config_path = os.path.join(args.exp_dir, 'config', 'parsed.yaml')
     
-    logging.info(f"Importing modules from cached code: {code_dir}")
-    sys.path.append(code_dir)
-    import datasets
     import systems
     import pytorch_lightning as pl
     from utils.misc import load_config    
@@ -71,7 +67,7 @@ def main():
     
     os.makedirs(args.output_dir, exist_ok=True)
     logging.info("Exporting mesh.")
-    mesh.export(os.path.join(args.output_dir, 'iso_mesh.glb'))
+    mesh.export(os.path.join(args.output_dir, f'{config.name}.glb'))
     logging.info("Export finished successfully.")
     
 if __name__ == '__main__':
