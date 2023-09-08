@@ -41,16 +41,13 @@ model:
       chunk: 2097152
       threshold: 0.
     xyz_encoding_config:
-      otype: ProgressiveBandHashGrid
+      otype: HashGrid
       n_levels: 16
       n_features_per_level: 2
       log2_hashmap_size: 19
       base_resolution: 32
       per_level_scale: 1.3195079107728942
       include_xyz: true
-      start_level: 4
-      start_step: 0
-      update_steps: 1000
     mlp_network_config:
       otype: VanillaMLP
       activation: ReLU

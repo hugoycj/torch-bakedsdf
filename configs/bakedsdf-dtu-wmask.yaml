@@ -119,6 +119,7 @@ checkpoint:
 export:
   chunk_size: 2097152
   export_glb: True
+  export_vertex_color: True
 
 trainer:
   max_steps: 10000
