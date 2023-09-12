@@ -8,27 +8,13 @@ import trimesh
 
 logging.basicConfig(level=logging.INFO)
 
-def decimate_mesh(mesh: str, decimation_factor: float):
-    logging.info(f"Original mesh with {len(mesh.faces)} faces.")
-
-    # Decimate the mesh
-    if decimation_factor < 1:
-        decimation_factor = int(len(mesh.faces) * decimation_factor)
-    else:
-        decimation_factor = int(decimation_factor)
-
-    mesh = mesh.simplify_quadratic_decimation(decimation_factor)
-    logging.info(f"Decimated mesh to {len(mesh.faces)} faces.")
-
-    return mesh
-    
 def main():
     logging.info("Start exporting.")
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', default='0', help='GPU(s) to be used')
     parser.add_argument('--exp_dir', required=True)
     parser.add_argument('--output-dir', default='results')
-    
+
     parser.add_argument('--decimate', default=-1, type=float, help='Specifies the desired final size of the mesh. \
                         If the number is less than 1, it represents the final size as a percentage of the initial size. \
                         If the number is greater than 1, it represents the desired number of faces.')
@@ -60,10 +46,6 @@ def main():
     system = systems.make(config.system.name, config, load_from_checkpoint=latest_ckpt)
     system.model.cuda()
     mesh = system.model.export_glb()
-    
-    if args.decimate > 0:
-        logging.info("Decimating mesh.")
-        mesh = decimate_mesh(mesh, args.decimate)
     
     os.makedirs(args.output_dir, exist_ok=True)
     logging.info("Exporting mesh.")
