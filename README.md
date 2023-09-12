@@ -32,8 +32,13 @@ python launch.py --config configs/bakedsdf-colmap.yaml --gpu 0 --train     datas
 
 # Export BakedSDF!
 ```
-
+python export.py --exp_dir ./exp/${exp_name}/${trail-name}
 ```
+for example, when we want to export neus-colmap data, we could run
+```
+python export.py --exp_dir ./exp/neus-colmap-stump/@20230907-133647
+```
+
 # Bring Bakedsdf into your APP!
 ## On Unity and Unreal
 You can use BakedSDF2FBX to convert the exported glb and import them into the sample projects of Unity and Unreal
