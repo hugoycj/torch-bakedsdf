@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset=utf-8>
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+    <title>BakedSDF Viewer</title>
+<style>
+body {
+  font-family: Helvetica, "Helvetica Neue", sans-serif;
+  font-size: 18px;
+  background: #FFF;
+  padding: 20px;
+  margin: 0;
+  text-align: center;
+}
+
+#Loading {
+  position: absolute;
+  top: 12px;
+  left: 90px;
+}
+
+#Loading h4 {
+  margin: 0px;
+}
+
+#loading-container {
+  width: 150px;
+  height: 150px;
+  padding: 0px;
+  margin: -40px 0 0 -40px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+}
+
+.loading-bgbox {
+  position: absolute;
+  width: 65px;
+  height: 65px;
+  background-color: #DDD;
+  width: 65px;
+  height: 65px;
+}
+
+#topleft {
+  top: 5px;
+  left: 5px;
+}
+
+#bottomleft {
+  bottom: 5px;
+  left: 5px;
+}
+
+#topright {
+  top: 5px;
+  right: 5px;
+}
+
+#bottomright {
+  bottom: 5px;
+  right: 5px;
+}
+
+#loading-indicator {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 65px;
+  height: 65px;
+  background-color: #999;
+  animation-name: indicator;
+  animation-duration: 5s;
+  animation-iteration-count: infinite;
+}
+
+@keyframes indicator {
+  0%   {top: 5px; left: 5px; }
+  25%  {top: 5px; left: 80px; }
+  50%  {top: 80px; left: 80px; }
+  75%  {top: 80px; left: 5px; }
+}
+
+#viewspacecontainer {
+  position: relative;
+  text-align: left;
+  display: none;
+  border: 3px solid #000;
+}
+
+/* The main BakedSDF view */
+.view {
+  margin: auto;
+  overflow: hidden;
+  transform-origin: top left;
+  background: #fff;
+}
+
+#rendermode {
+  position: absolute;
+  margin: 0 0 0 -200px;
+  top: 0px;
+  left: 50%;
+  width: 400px;
+  height: 25px;
+  text-align: center;
+  background: rgba(255,255,255,0.6);
+}
+
+</style>
+</head>
+<body>
+
+<div id="viewspacecontainer">
+  <div id="Loading">
+      <h4>[Loading]</h4>
+  </div>
+  <div id="rendermode">
+    Full rendering (press space to toggle)
+  </div>
+  <div id="loading-container">
+    <div id="topleft" class="loading-bgbox"></div>
+    <div id="bottomleft" class="loading-bgbox"></div>
+    <div id="topright" class="loading-bgbox"></div>
+    <div id="bottomright" class="loading-bgbox"></div>
+    <div id="loading-indicator"></div>
+  </div>
+  <div class=viewspace id="viewspace">  </div>
+</div>
+
+<script src="third_party/three.js"></script>
+<script src="third_party/OrbitControls.js"></script>
+<script src="third_party/GLTFLoader.js"></script>
+<script src="third_party/stats.min.js"></script>
+
+<script src="sg_renderer.js"></script>
+</body>
+</html>
