@@ -52,7 +52,7 @@ http://github.com/AyoubKhammassi/UnrealBakedSDF
 ## On Web
 The web plugin is comming soon. You could currently view you asset by running
 ```
-python viewer.py --data results/{exported}.glb
+python viewer.py --data results
 ```
 
 # Acknowledgement
