@@ -1,0 +1,75 @@
+# Use multi-stage builds
+FROM nvidia/cuda:11.8.0-devel-ubuntu22.04 AS builder
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    pkg-config \
+    cmake \
+    curl \
+    python3-pip \
+    python3.10-venv \
+    git \
+    g++ \
+    gcc \
+    python3-dev \
+    build-essential && \
+    # Clean up in the same RUN instruction
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Create a virtual environment
+RUN python3 -m venv /opt/venv
+
+COPY requirements.txt .
+
+# Install packages into the virtual environment
+RUN /opt/venv/bin/pip install --upgrade pip && \
+    /opt/venv/bin/pip install torch torchvision --trusted-host mirrors.aliyun.com -i http://mirrors.aliyun.com/pypi/simple && \
+    /opt/venv/bin/pip install git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch && \
+    /opt/venv/bin/pip install ninja imageio imageio-ffmpeg trimesh && \
+    /opt/venv/bin/pip install git+https://github.com/NVlabs/nvdiffrast/ && \
+    /opt/venv/bin/pip install -r requirements.txt && \
+    # Clean up in the same RUN instruction
+    rm -r ~/.cache/pip
+
+# Second stage
+FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    pkg-config \
+    libglvnd0 \
+    libgl1 \
+    libglx0 \
+    libegl1 \
+    libgles2 \
+    libglvnd-dev \
+    libgl1-mesa-dev \
+    libegl1-mesa-dev \
+    libgles2-mesa-dev \
+    cmake \
+    curl \
+    python3-pip \
+    python3.10-venv \
+    python3-dev \
+    git && \
+    # Clean up in the same RUN instruction
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Copy the virtual environment from the builder stage
+COPY --from=builder /opt/venv /opt/venv
+
+# Make the virtual environment the default Python runtime
+ENV PATH="/opt/venv/bin:$PATH"
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# for GLEW
+ENV LD_LIBRARY_PATH /usr/lib64:$LD_LIBRARY_PATH
+
+# nvidia-container-runtime
+ENV NVIDIA_VISIBLE_DEVICES all
+ENV NVIDIA_DRIVER_CAPABILITIES compute,utility,graphics
+
+# Default pyopengl to EGL for good headless rendering support
+ENV PYOPENGL_PLATFORM egl
+
+COPY 10_nvidia.json /usr/share/glvnd/egl_vendor.d/10_nvidia.json
