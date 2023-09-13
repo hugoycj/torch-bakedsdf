@@ -44,10 +44,7 @@ http://github.com/AyoubKhammassi/UnityBakedSDF
 http://github.com/AyoubKhammassi/UnrealBakedSDF
 
 ## On Web
-The web plugin is comming soon. You could currently view you asset by running
-```
-python viewer.py --data results
-```
+The local web viewer is comming soon.
 
 # Acknowledgement
 The code is based on
