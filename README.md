@@ -4,12 +4,9 @@ An unofficial pytorch implementation of [Meshing Neural SDFs for Real-Time View 
 We support exporting baked assets for **real-time rendering on WebGL, Unity and Unreal**
 
 # Install 
-We offer two ways to setup the environment:
-1. We provide prebuilt Docker images for runing BakedSDF pipeline
-
-2. The conda enviroment for BakedSDF. Install the dependencies and activate the environment `bakedsdf` with
 ```
-
+pip install git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
+pip install -r requirements.txt
 ```
 For COLMAP, alternative installation options are also available on the [COLMAP website](https://colmap.github.io/)
 

@@ -1,4 +1,6 @@
 pytorch-lightning<2
+torch
+torchvision
 omegaconf==2.2.3
 nerfacc==0.3.3
 matplotlib
