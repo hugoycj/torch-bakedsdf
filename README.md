@@ -32,6 +32,7 @@ for example, when we want to export neus-colmap data, we could run
 ```
 python export.py --exp_dir ./exp/neus-colmap-stump/@20230907-133647
 ```
+the export results will be saved in `./results` in a glb format
 
 # Bring Bakedsdf into your APP!
 ## On Unity and Unreal
