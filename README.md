@@ -11,14 +11,11 @@ pip install -r requirements.txt
 For COLMAP, alternative installation options are also available on the [COLMAP website](https://colmap.github.io/)
 
 # Data preparation
-We majorly support COLMAP dataset like [Mip-NeRF 360](http://storage.googleapis.com/gresearch/refraw360/360_v2.zip). Please download and put them under ./data
-
-For custom datasets:
+To get COLMAP data from custom images, you should have COLMAP installed (see here for installation instructions). Then put your images in the images/ folder, and run scripts/imgs2poses.py specifying the path containing the images/ folder. For example:
 ```
-# prepare your video or images under /data/custom, and run colmap (assumed installed):
-python scripts/colmap2nerf.py --video ./data/custom/video.mp4 --run_colmap # if use video
-python scripts/colmap2nerf.py --images ./data/custom/images/ --run_colmap # if use images
+python scripts/imgs2poses.py ./load/bmvs_dog # images are in ./load/bmvs_dog/images
 ```
+Existing data following this file structure also works as long as images are store in images/ and there is a sparse/ folder for the COLMAP output, for example the data provided by [MipNeRF 360](http://storage.googleapis.com/gresearch/refraw360/360_v2.zip).
 
 # Run BakedSDF!
 ```
