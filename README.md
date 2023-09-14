@@ -6,6 +6,7 @@ We support exporting baked assets for **real-time rendering on WebGL, Unity and 
 
 # Install 
 ```
+pip install torch torchvision
 pip install git+https://github.com/NVlabs/tiny-cuda-nn/#subdirectory=bindings/torch
 pip install -r requirements.txt
 ```
